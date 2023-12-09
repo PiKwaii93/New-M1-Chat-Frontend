@@ -21,7 +21,7 @@ const ProtectedRoute = ({ children, auth = false }) => {
 function App() {
   return (
     <div className="w-screen flex justify-center items-center">
-      <Routes>
+      {/* <Routes>
         <Route
           path="sign_in"
           element={
@@ -46,7 +46,8 @@ function App() {
             </ProtectedRoute>
           }
         />
-      </Routes>
+      </Routes> */}
+      meow
     </div>
   );
 }
