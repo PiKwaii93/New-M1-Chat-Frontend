@@ -4,7 +4,7 @@ import Send from "../../assets/send.svg";
 import Add from "../../assets/add.svg";
 import Textarea from "../../components/Textarea";
 import StatusIndicator from "../../components/StatusIndicator";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { formatDate } from "../../helpers";
 import Input from "../../components/Input";
@@ -27,6 +27,7 @@ function Dashboard() {
   const [search, setSearch] = useState("");
   const [socket, setSocket] = useState(null);
   const [activeUsers, setActiveUsers] = useState([]);
+  const messageRef = useRef(null);
 
   useEffect(() => {
     setSocket(io(`${import.meta.env.VITE_URL_SOCKET}`));
@@ -178,7 +179,7 @@ function Dashboard() {
   }, [message]);
 
   useEffect(() => {
-    console.log("Messages >>>>", messages);
+    messageRef?.current?.scrollIntoView({ behavior: "instant" });
   }, [messages]);
 
   return (
@@ -196,7 +197,7 @@ function Dashboard() {
               <ParamSidebar />
             </SidebarProvider>
             <button
-              className="buttonDisconnect"
+              className="buttonDisconnect hover:scale-110 mr-8 transition-all ease-out delay-30 "
               onClick={() => {
                 disconnectUser(userLoggin.id);
               }}
@@ -278,14 +279,17 @@ function Dashboard() {
                 messages.map(({ content, sender_id, id, updated_at }) => {
                   if (sender_id === userLoggin.id) {
                     return (
-                      <div className="max-w-[40%] ml-auto mb-6" key={id}>
-                        <p className="text-sm font-light text-gray-400 text-end">
-                          {formatDate(updated_at)}
-                        </p>
-                        <div className="w-full bg-primary text-white rounded-b-xl rounded-tl-xl p-4">
-                          {content}
+                      <>
+                        <div className="max-w-[40%] ml-auto mb-6" key={id}>
+                          <p className="text-sm font-light text-gray-400 text-end">
+                            {formatDate(updated_at)}
+                          </p>
+                          <div className="w-full bg-primary text-white rounded-b-xl rounded-tl-xl p-4">
+                            {content}
+                          </div>
                         </div>
-                      </div>
+                        <div ref={messageRef}></div>
+                      </>
                     );
                   } else {
                     return (
@@ -341,7 +345,7 @@ function Dashboard() {
           <div className="text-primary text-lg mb-6">Utilisateurs</div>
           <Input
             name="search"
-            placeholder="Rechechez un utilisateur"
+            placeholder="Rechechez un utilisateur par email"
             className="w-[100%]"
             inputClassName="p-3"
             value={search}
