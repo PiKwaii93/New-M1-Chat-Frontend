@@ -1,0 +1,7 @@
+.MuiSvgIcon-root {
+    height: 24px !important;
+    width: 24px !important;
+}
+.MuiSvgIcon-root path {
+    fill: #2253D1;
+}

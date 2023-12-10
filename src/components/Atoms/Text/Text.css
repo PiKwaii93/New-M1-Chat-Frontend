@@ -1,0 +1,53 @@
+.text {
+  margin: 0;
+}
+
+.small {
+  font-size: 14px;
+  font-weight: 400;
+}
+.small__grey {
+  color: #9E9E9E;
+}
+.small__dark {
+  color: #464646;
+}
+.small__red-error {
+  color: #FE3A3A;
+}
+
+.small__red-button {
+  color: #FE3A3A;
+  cursor: pointer;
+}
+
+.medium {
+  font-size: 16px;
+  color: #464646
+}
+.medium__regular {
+  font-weight: 400;
+}
+.medium__semi-bold {
+  font-weight: 600;
+}
+.medium__bold {
+  font-weight: 700;
+}
+
+.large {
+  font-size: 18px;
+  font-weight: 400;
+  color: #464646;
+}
+
+.title {
+  color: #464646;
+}
+.title__menu {
+  font-size: 22px;
+}
+.title__large {
+  font-size: 48px;
+}
+

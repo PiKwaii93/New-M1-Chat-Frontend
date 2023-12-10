@@ -3,14 +3,21 @@ import Call from "../../assets/call.svg";
 import Send from "../../assets/send.svg";
 import Add from "../../assets/add.svg";
 import Textarea from "../../components/Textarea";
+import StatusIndicator from "../../components/StatusIndicator";
 import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { formatDate } from "../../helpers";
 import Input from "../../components/Input";
 import { io } from "socket.io-client";
+import { SidebarProvider } from "../../components/Organisms/ParamSidebar/ParamSidebarContext";
+import ButtonSidebar from "../../components/Organisms/ParamSidebar/ButtonSidebar";
+import ParamSidebar from "../../components/Organisms/ParamSidebar/ParamSidebar";
+import "./Dashboard.css";
+import { useNavigate } from "react-router-dom";
 
 function Dashboard() {
   const userLoggin = JSON.parse(localStorage.getItem("user"));
+  const navigate = useNavigate();
   const [conversations, setConversations] = useState([]);
   const [currentConversation, setCurrentConversation] = useState(undefined);
   const [messages, setMessages] = useState([]);
@@ -19,15 +26,16 @@ function Dashboard() {
   const [usersWithoutSearch, setUsersWithoutSearch] = useState([]);
   const [search, setSearch] = useState("");
   const [socket, setSocket] = useState(null);
+  const [activeUsers, setActiveUsers] = useState([]);
 
   useEffect(() => {
-    setSocket(io("http://13.49.21.187:4080"));
+    setSocket(io(`${import.meta.env.VITE_URL_SOCKET}`));
   }, []);
 
   const fetchConversations = useCallback(async () => {
     const { data } = await axios({
       method: "get",
-      url: `http://13.49.21.187:4000/api/conversations/${userLoggin.id}`,
+      url: `${import.meta.env.VITE_URL_API}api/conversations/${userLoggin.id}`,
     });
     setConversations([...data]);
   }, [userLoggin.id]);
@@ -36,6 +44,7 @@ function Dashboard() {
     socket?.emit("addUser", userLoggin?.id);
     socket?.on("getUsers", (users) => {
       console.log("Active users", users);
+      setActiveUsers([...users]);
     });
     socket?.on("getMessage", (data) => {
       console.log("Data Message >>>>", data);
@@ -43,6 +52,15 @@ function Dashboard() {
       setMessages((prev) => {
         return [...prev, data];
       });
+    });
+
+    socket?.on("getUsersWhenOneDeleted", (users) => {
+      setActiveUsers([...users]);
+      fetchConversations();
+    });
+
+    socket?.on("getUsersWhenOneCreatedOrUpdate", () => {
+      fetchConversations();
     });
   }, [socket, userLoggin.id, fetchConversations]);
 
@@ -54,7 +72,7 @@ function Dashboard() {
     async function fetchUsers() {
       const { data } = await axios({
         method: "get",
-        url: `http://13.49.21.187:4000/api/users`,
+        url: `${import.meta.env.VITE_URL_API}api/users`,
       });
 
       const conversationEmail = conversations.map(
@@ -91,7 +109,7 @@ function Dashboard() {
   async function fetchMessages(conversaion_id) {
     const { data } = await axios({
       method: "get",
-      url: `http://13.49.21.187:4000/api/messages/${conversaion_id}`,
+      url: `${import.meta.env.VITE_URL_API}api/messages/${conversaion_id}`,
     });
     setMessages([...data]);
   }
@@ -99,7 +117,7 @@ function Dashboard() {
   async function sendMessage(conversation_id, content) {
     await axios({
       method: "post",
-      url: `http://13.49.21.187:4000/api/messages`,
+      url: `${import.meta.env.VITE_URL_API}api/messages`,
       data: {
         conversation_id,
         sender_id: userLoggin.id,
@@ -109,6 +127,12 @@ function Dashboard() {
     })
       .then(({ data }) => {
         console.log(data);
+        if (currentConversation.id == "new") {
+          setCurrentConversation({
+            id: data.message.conversation_id,
+            contact: { ...currentConversation.contact },
+          });
+        }
         socket.emit("sendMessage", {
           id: data.message.id,
           sender_id: userLoggin.id,
@@ -122,6 +146,19 @@ function Dashboard() {
       .catch((e) => {
         console.error(e);
       });
+  }
+
+  function disconnectUser() {
+    localStorage.clear();
+    navigate("/sign_in", { replace: true });
+  }
+
+  function isUserConnected(id) {
+    console.log(
+      "ConnectedFunction",
+      activeUsers.find((user) => user.userId === id) ? true : false
+    );
+    return activeUsers.find((user) => user.userId === id) ? true : false;
   }
 
   useEffect(() => {
@@ -154,6 +191,18 @@ function Dashboard() {
           <div className="ml-4">
             <h3 className="text-2xl">{userLoggin.full_name}</h3>
             <p className="text-lg font-light">{userLoggin.email}</p>
+            <SidebarProvider>
+              <ButtonSidebar />
+              <ParamSidebar />
+            </SidebarProvider>
+            <button
+              className="buttonDisconnect"
+              onClick={() => {
+                disconnectUser(userLoggin.id);
+              }}
+            >
+              Déconnexion
+            </button>
           </div>
         </div>
         <hr />
@@ -161,6 +210,7 @@ function Dashboard() {
           <div className="text-primary text-lg">Contacts</div>
           <div>
             {conversations.map(({ id, contact, img }) => {
+              const isConnected = isUserConnected(contact.id);
               return (
                 <div
                   className="flex items-center py-8 border-b border-b-gray-300 "
@@ -173,13 +223,15 @@ function Dashboard() {
                       setCurrentConversation({ id, contact });
                     }}
                   >
-                    <div className="border border-primary p-[2px] rounded-full">
+                    <div className="relative me-4">
                       <img
                         src={img || Avatar}
                         alt="Avatar icon"
                         width={60}
                         height={60}
+                        className="rounded-full"
                       />
+                      <StatusIndicator isConnected={isConnected} />
                     </div>
                     <div className="ml-6">
                       <h3 className="text-lg font-semibold">
@@ -249,10 +301,15 @@ function Dashboard() {
                   }
                 })
               ) : (
-                <p className="text-2xl text-center">No Message</p>
+                <p className="text-2xl text-center">
+                  Écrivez votre premier message à{" "}
+                  {currentConversation.contact.full_name}
+                </p>
               )
             ) : (
-              <p className="text-2xl text-center">No conversation selected</p>
+              <p className="text-2xl text-center">
+                Vous n&apos;avez pas encore de contact
+              </p>
             )}
           </div>
         </div>
@@ -260,7 +317,7 @@ function Dashboard() {
           <div className="p-14 w-full bg-white flex items-center">
             <Textarea
               name="message"
-              placeholder="Type a message..."
+              placeholder="Tapez votre message..."
               className="w-[75%]"
               textareaClassName="p-4 ring-0 shadow-md"
               isRequired={false}
@@ -281,11 +338,12 @@ function Dashboard() {
       </div>
       <div className="w-[25%] h-screen bg-white overflow-scroll">
         <div className="mx-14 mt-10">
-          <div className="text-primary text-lg mb-6">Users</div>
+          <div className="text-primary text-lg mb-6">Utilisateurs</div>
           <Input
             name="search"
-            placeholder="Find user"
+            placeholder="Rechechez un utilisateur"
             className="w-[100%]"
+            inputClassName="p-3"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
