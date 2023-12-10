@@ -21,13 +21,13 @@ function Dashboard() {
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {
-    setSocket(io("http://localhost:4080"));
+    setSocket(io("http://13.49.21.187:4080"));
   }, []);
 
   const fetchConversations = useCallback(async () => {
     const { data } = await axios({
       method: "get",
-      url: `http://localhost:4000/api/conversations/${userLoggin.id}`,
+      url: `http://13.49.21.187:4000/api/conversations/${userLoggin.id}`,
     });
     setConversations([...data]);
   }, [userLoggin.id]);
@@ -54,7 +54,7 @@ function Dashboard() {
     async function fetchUsers() {
       const { data } = await axios({
         method: "get",
-        url: `http://localhost:4000/api/users`,
+        url: `http://13.49.21.187:4000/api/users`,
       });
 
       const conversationEmail = conversations.map(
@@ -91,7 +91,7 @@ function Dashboard() {
   async function fetchMessages(conversaion_id) {
     const { data } = await axios({
       method: "get",
-      url: `http://localhost:4000/api/messages/${conversaion_id}`,
+      url: `http://13.49.21.187:4000/api/messages/${conversaion_id}`,
     });
     setMessages([...data]);
   }
@@ -99,7 +99,7 @@ function Dashboard() {
   async function sendMessage(conversation_id, content) {
     await axios({
       method: "post",
-      url: `http://localhost:4000/api/messages`,
+      url: `http://13.49.21.187:4000/api/messages`,
       data: {
         conversation_id,
         sender_id: userLoggin.id,

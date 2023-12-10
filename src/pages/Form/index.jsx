@@ -33,7 +33,7 @@ function Form({ isSignInPage = false }) {
     resetInfos();
     const res = await axios({
       method: "post",
-      url: `http://localhost:4000/api/users/${
+      url: `http://13.49.21.187:4000/api/users/${
         isSignInPage ? "sign-in" : "sign-up"
       }`,
       data,
